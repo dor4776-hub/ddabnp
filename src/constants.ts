@@ -1,5 +1,5 @@
 
-import { EventCategoryTemplate, EquipmentItem } from './types';
+import type { EventCategoryTemplate, EquipmentItem } from './types';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
