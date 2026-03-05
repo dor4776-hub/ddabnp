@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { EventRecord, EquipmentItem } from '../types';
+import type { EventRecord, EquipmentItem } from '../types';
 import { Save, ArrowRight, Plus, Sparkles, AlertTriangle, CheckCheck, Boxes, User, Calendar, CheckSquare, Square, Droplets, XCircle, Coins, Package } from 'lucide-react';
 import { EVENT_TEMPLATES, CATEGORIES } from "../constants";
 import { getEquipmentSuggestions } from "../services/geminiService";
