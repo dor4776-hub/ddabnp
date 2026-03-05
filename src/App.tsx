@@ -63,25 +63,11 @@ const App: React.FC = () => {
     return { ...savedEvent, items: mergedItems };
   };
 
-  const handleCreateNew = (type: EventType) => {
-    const template = EVENT_TEMPLATES[type];
-    setCurrentDraft({
-      id: Math.random().toString(36).substr(2, 9),
-      type,
-      eventName: '',
-      managerName: '',
-      eventDate: new Date().toISOString().split('T')[0],
-      items: template.defaultItems.map(item => ({ ...item })),
-      status: 'active',
-      createdAt: Date.now(),
-    });
-    setView('editor');
-  };
-
+ // 1. פתיחת אירוע מהיסטוריה - מציג רק מה שיצא/סומן
   const handleEditEvent = (id: string) => {
     const eventToEdit = events.find(e => e.id === id);
     if (eventToEdit) {
-      // אנחנו לוקחים רק את הפריטים שיש בהם ערך כלשהו
+      // כאן ה"מסננת" הקריטית
       const onlyUsedItems = eventToEdit.items.filter(item => 
         (item.quantityOut > 0) || 
         (item.isChecked === true) || 
@@ -90,12 +76,28 @@ const App: React.FC = () => {
       
       setCurrentDraft({
         ...eventToEdit,
-        items: onlyUsedItems
+        items: onlyUsedItems // שולח לטופס רק את הרשימה המקוצרת
       });
       setView('editor');
     }
   };
 
+  // 2. יצירת אירוע חדש - תמיד מציג את הרשימה המלאה
+  const handleCreateNew = (type: EventType) => {
+    const template = EVENT_TEMPLATES[type];
+    setCurrentDraft({
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      eventName: '',
+      managerName: '',
+      eventDate: new Date().toISOString().split('T')[0],
+      items: template.defaultItems.map(item => ({ ...item })), // שולח לטופס את כל הפריטים מהתבנית
+      status: 'active',
+      createdAt: Date.now(),
+    });
+    setView('editor');
+  };
+  
   const handleImportEvent = (importedData: any) => {
     const fullEvent = restoreToFullTemplate(importedData);
     setCurrentDraft({
