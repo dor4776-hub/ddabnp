@@ -152,16 +152,55 @@ const App: React.FC = () => {
     setCurrentDraft(null);
   };
 
-  if (!isAuthenticated) return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center" dir="rtl">
-      <h1 className="text-yellow-500 text-4xl font-bold mb-8">BNP</h1>
-      <input 
-        type="password" 
-        placeholder="קוד גישה" 
-        className="bg-gray-900 text-white p-4 rounded-xl text-center outline-none border border-gray-700 focus:border-yellow-500" 
-        onChange={(e) => e.target.value === '2026' && setIsAuthenticated(true)} 
-      />
-    </div>
+if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center font-sans" dir="rtl">
+        {/* אלמנטים עיצוביים ברקע */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-sm">
+          {/* מיתוג לוגו */}
+          <div className="mb-12 animate-fade-in">
+            <h1 className="text-yellow-500 text-7xl font-black tracking-tighter mb-2 italic">BNP</h1>
+            <div className="h-1 w-24 bg-yellow-500 mx-auto rounded-full mb-4"></div>
+            <p className="text-gray-400 uppercase tracking-[0.3em] text-xs font-light">
+              Cocktail Bar Service
+            </p>
+          </div>
+
+          {/* כרטיס כניסה */}
+          <div className="bg-gray-900/40 backdrop-blur-xl p-8 rounded-3xl border border-gray-800 shadow-2xl">
+            <h2 className="text-white text-lg mb-8 font-light">הכנס קוד גישה למערכת</h2>
+            
+            <div className="relative">
+              <input 
+                type="password" 
+                inputMode="numeric"
+                placeholder="••••"
+                className="bg-black/50 text-yellow-500 border border-gray-700 p-5 rounded-2xl text-center text-4xl mb-8 w-full focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-all tracking-[0.5em] font-mono"
+                autoFocus
+                onChange={(e) => {
+                  if (e.target.value === '2026') setIsAuthenticated(true);
+                }}
+              />
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-gray-500 text-xs">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+              <span>מערכת ניהול מלאי - צוות מורשה בלבד</span>
+            </div>
+          </div>
+
+          <p className="mt-12 text-gray-600 text-[10px] uppercase tracking-widest">
+            Developed for BNP Professionals
+          </p>
+        </div>
+      </div>
+    );
+  }
   );
 
   return (
