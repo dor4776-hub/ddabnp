@@ -81,7 +81,17 @@ const App: React.FC = () => {
   const handleEditEvent = (id: string) => {
     const eventToEdit = events.find(e => e.id === id);
     if (eventToEdit) {
-      setCurrentDraft(restoreToFullTemplate(eventToEdit));
+      // אנחנו לוקחים רק את הפריטים שיש בהם ערך כלשהו
+      const onlyUsedItems = eventToEdit.items.filter(item => 
+        (item.quantityOut > 0) || 
+        (item.isChecked === true) || 
+        ((item.quantityIn || 0) > 0)
+      );
+      
+      setCurrentDraft({
+        ...eventToEdit,
+        items: onlyUsedItems
+      });
       setView('editor');
     }
   };
