@@ -12,7 +12,7 @@ const App: React.FC = () => {
   const [currentDraft, setCurrentDraft] = useState<EventRecord | null>(null);
 
   // הכתובת החדשה מה-Apps Script
-  const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycbzvG58xkWWJwzGn39pb-X8gN6VuSoCYHdpeK3v5e58sQ1ck_HXtXPpwXNcLs_MPikvu/exec';
+  const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycbwWzmwl-DpPulFGiA9PJSsb5j4fDRdonq2zKrPp3fi8s1x65PpvnZV3n16mmiMaEMM_/exec';
 
   useEffect(() => {
     const loadData = async () => {
