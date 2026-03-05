@@ -3,7 +3,7 @@ import  { Layout } from './components/Layout';
 import  { Dashboard } from './components/Dashboard';
 import  { EventForm } from './components/EventForm';
 import type { EventRecord, EventType, EquipmentItem } from './types';
-import  { EVENT_TEMPLATES, CATEGORIES } from './constants';
+import  { EVENT_TEMPLATES } from './constants';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'editor'>('dashboard');
