@@ -11,8 +11,8 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [currentDraft, setCurrentDraft] = useState<EventRecord | null>(null);
 
-  // הכתובת החדשה מה-Apps Script
-  const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycbwWzmwl-DpPulFGiA9PJSsb5j4fDRdonq2zKrPp3fi8s1x65PpvnZV3n16mmiMaEMM_/exec';
+  // הכתובת החדשה מה-Apps Script - תדביק כאן את מה שקיבלת מה-Deploy!
+  const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycbw3ZPlWTfk1I28ZewRbfxqiXZIYoLeN3NPDolsk1e5_dYcReF5h-Y0cn-GdlIa00j1o/exec';
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,9 +51,9 @@ const App: React.FC = () => {
     
     let rowsHtml = event.items.map(item => `<tr><td>${item.category}</td><td>${item.name}</td><td>${item.quantityOut || (item.isChecked ? 'V' : 0)}</td><td>${item.quantityIn || 0}</td></tr>`).join('');
     
+    // כאן מוטמע ה-JSON השלם בתוך הקובץ המעוצב!
     const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8">${styles}</head><body dir="rtl"><h2>דוח אירוע: ${event.eventName}</h2><table><thead><tr><th>קטגוריה</th><th>פריט</th><th>יצא</th><th>חזר</th></tr></thead><tbody>${rowsHtml}</tbody></table><div style="display:none" id="bnp-data">${JSON.stringify(event)}</div></body></html>`;
 
-    // הורדה למחשב
     const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -61,7 +61,6 @@ const App: React.FC = () => {
     link.download = `${event.eventName}.xls`;
     link.click();
 
-    // שליחה לגוגל
     const params = new URLSearchParams();
     params.append('eventData', JSON.stringify(event));
     params.append('fileData', html);
@@ -84,6 +83,27 @@ const App: React.FC = () => {
 
     setCurrentDraft({ id: Math.random().toString(36).substr(2, 9), type, eventName: importedData.eventName || 'אירוע מיובא', managerName: importedData.managerName || '', eventDate: new Date().toISOString().split('T')[0], items: mergedItems, status: 'active', createdAt: Date.now() });
     setView('editor');
+  };
+
+  // --- התיקון הגדול שלך: משיכת אירוע היסטורי עובדת בדיוק כמו ייבוא! ---
+  const handleEditEvent = (id: string) => {
+    const eventToEdit = events.find(e => e.id === id);
+    if (eventToEdit) {
+      const type = eventToEdit.type || 'private';
+      const template = EVENT_TEMPLATES[type];
+      
+      // משחזרים את כל השורות מהתבנית ומזריקים לתוכן את הנתונים שנשמרו
+      const mergedItems = template.defaultItems.map(tItem => {
+        const found = eventToEdit.items?.find((i: any) => i.name === tItem.name);
+        return found ? { ...tItem, ...found } : { ...tItem };
+      });
+
+      setCurrentDraft({
+        ...eventToEdit,
+        items: mergedItems
+      });
+      setView('editor');
+    }
   };
 
   const handleSaveEvent = async (updatedEvent: EventRecord) => {
@@ -110,7 +130,7 @@ const App: React.FC = () => {
 
   return (
     <Layout onNavigateHome={() => setView('dashboard')}>
-      {view === 'dashboard' && <Dashboard events={events} onCreateNew={handleCreateNew} onEditEvent={(id) => { const e = events.find(ev => ev.id === id); if(e) { setCurrentDraft(e); setView('editor'); } }} onDeleteEvent={(id) => setEvents(prev => prev.filter(e => e.id !== id))} onImportEvent={handleImportEvent} />}
+      {view === 'dashboard' && <Dashboard events={events} onCreateNew={handleCreateNew} onEditEvent={handleEditEvent} onDeleteEvent={(id) => setEvents(prev => prev.filter(e => e.id !== id))} onImportEvent={handleImportEvent} />}
       {view === 'editor' && currentDraft && <EventForm event={currentDraft} onSave={handleSaveEvent} onBack={() => { setCurrentDraft(null); setView('dashboard'); }} />}
     </Layout>
   );
