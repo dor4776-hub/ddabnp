@@ -6,20 +6,20 @@ import type { EventRecord, EventType, EquipmentItem } from './types';
 import { EVENT_TEMPLATES } from './constants';
 
 const App: React.FC = () => {
-  // --- מנגנון נעילה BNP (ללא משתנים מיותרים) ---
+  // --- מנגנון נעילה BNP ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const [view, setView] = useState<'dashboard' | 'editor'>('dashboard');
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [currentDraft, setCurrentDraft] = useState<EventRecord | null>(null);
 
-// טעינה מהענן של גוגל עם גיבוי מקומי ומערכת שחזור רשימות חכמה
+  // --- טעינה מהענן של גוגל עם שחזור רשימות חכם (בלוק יחיד ונקי) ---
   useEffect(() => {
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7I4Iv-XieA9GdwD5DDqMjMmMqM9SkJ33Yn3lAlKrC4rmQKosls1WFiXQSzhT2dFv1/exec';
   
     const loadData = async () => {
       try {
-        // 1. טעינה מקומית ראשונית - כדי שהאפליקציה תעלה מיד
+        // 1. קודם כל טעינה מקומית מהירה
         const saved = localStorage.getItem('eventTrack_events');
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -39,23 +39,26 @@ const App: React.FC = () => {
         if (data && Array.isArray(data) && data.length > 0) {
           const formattedEvents = data.map((item: any) => {
             const rawItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []);
-
+            
             let finalItems = rawItems;
+            const eventType = item.type || 'private'; // קביעת סוג אירוע ברירת מחדל אם חסר
 
-            if (item.type && EVENT_TEMPLATES[item.type as EventType]) {
-              const template = EVENT_TEMPLATES[item.type as EventType];
+            // שחזור הציוד המלא מול התבנית
+            if (EVENT_TEMPLATES[eventType as EventType]) {
+              const template = EVENT_TEMPLATES[eventType as EventType];
               const savedItemsMap = new Map(rawItems.map((r: any) => [r.name, r]));
 
               finalItems = template.defaultItems.map((templateItem: any) => {
-                const baseItem = templateItem || {}; // <-- הגנה 1: מוודא שהתבנית היא אובייקט
+                const baseItem = templateItem || {};
                 if (savedItemsMap.has(baseItem.name)) {
-                  const savedData = savedItemsMap.get(baseItem.name) || {}; // <-- הגנה 2: מוודא שהנתון השמור הוא אובייקט
+                  const savedData = savedItemsMap.get(baseItem.name) || {};
                   savedItemsMap.delete(baseItem.name);
-                  return { ...baseItem, ...savedData };
+                  return { ...baseItem, ...savedData }; // ממזג את השורות שמולאו
                 }
-                return { ...baseItem };
+                return { ...baseItem }; // מחזיר שורה ריקה ומוכנה למילוי לכל שאר הבר
               });
 
+              // מוסיף פריטים מיוחדים שהקלדתם ידנית
               savedItemsMap.forEach((customItem: any) => {
                 if (customItem) finalItems.push(customItem);
               });
@@ -63,6 +66,7 @@ const App: React.FC = () => {
 
             return {
               ...item,
+              type: eventType,
               items: finalItems,
               createdAt: item.createdAt || Date.now()
             };
@@ -78,45 +82,8 @@ const App: React.FC = () => {
   
     loadData();
   }, []);
-//  טעינה מהענן של גוגל עם גיבוי מקומי
-  useEffect(() => {
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7I4Iv-XieA9GdwD5DDqMjMmMqM9SkJ33Yn3lAlKrC4rmQKosls1WFiXQSzhT2dFv1/exec';
-  
-    const loadData = async () => {
-      try {
-        const saved = localStorage.getItem('eventTrack_events');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setEvents(parsed);
-          }
-        }
-  
-        if (!GOOGLE_SCRIPT_URL.startsWith('http')) return;
-  
-        const response = await fetch(GOOGLE_SCRIPT_URL);
-        if (!response.ok) throw new Error('Network error');
-        
-        const data = await response.json();
-        
-        if (data && Array.isArray(data) && data.length > 0) {
-          const formattedEvents = data.map((item: any) => ({
-            ...item,
-            items: typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []),
-            createdAt: item.createdAt || Date.now()
-          }));
-          
-          setEvents(formattedEvents);
-          localStorage.setItem('eventTrack_events', JSON.stringify(formattedEvents));
-        }
-      } catch (e) {
-        console.warn("סנכרון נכשל, משתמשים בנתונים מקומיים בלבד", e);
-      }
-    };
-  
-    loadData();
-  }, []);
 
+  // --- שמירה מקומית בכל שינוי ---
   useEffect(() => {
     localStorage.setItem('eventTrack_events', JSON.stringify(events));
   }, [events]);
@@ -215,7 +182,6 @@ const App: React.FC = () => {
 
     html += `</tbody><tfoot><tr><td colspan="7" class="footer-label" style="text-align: left;">סה"כ לתשלום:</td><td class="total-row">₪${grandTotal.toLocaleString()}</td></tr></tfoot></table></body></html>`;
 
-    // 1. הורדה למחשב
     const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const fileName = `${event.eventName.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('he-IL').replace(/\./g, '-')}.xls`;
@@ -225,7 +191,6 @@ const App: React.FC = () => {
     link.click();
     URL.revokeObjectURL(url);
 
-    // 2. שליחה לדרייב
     const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycby7I4Iv-XieA9GdwD5DDqMjMmMqM9SkJ33Yn3lAlKrC4rmQKosls1WFiXQSzhT2dFv1/exec';
     const params = new URLSearchParams();
     params.append('fileData', html); 
