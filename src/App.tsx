@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Layout } from './components/Layout';
-import { Dashboard } from './components/Dashboard';
-import { EventForm } from './components/EventForm';
-import { EventRecord, EventType, EquipmentItem } from './types';
-import { EVENT_TEMPLATES, CATEGORIES } from './constants';
+import type React, { useState, useEffect } from 'react';
+import type { Layout } from './components/Layout';
+import type { Dashboard } from './components/Dashboard';
+import type { EventForm } from './components/EventForm';
+import type { EventRecord, EventType, EquipmentItem } from './types';
+import type { EVENT_TEMPLATES, CATEGORIES } from './constants';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'editor'>('dashboard');
