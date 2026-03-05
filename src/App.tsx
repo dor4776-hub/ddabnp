@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx'; 
+// @ts-ignore
+import * as XLSX from 'xlsx';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { EventForm } from './components/EventForm';
