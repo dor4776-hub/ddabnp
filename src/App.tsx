@@ -11,7 +11,7 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [currentDraft, setCurrentDraft] = useState<EventRecord | null>(null);
 
-  const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycby7I4Iv-XieA9GdwD5DDqMjMmMqM9SkJ33Yn3lAlKrC4rmQKosls1WFiXQSzhT2dFv1/exec';
+  const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycbyPGcrElfhcR1F9O3zaOg5jJj0Nzga8hrJkqz6dOEdOHm78CefRSu_onqLhYvsTHEcz/exec';
 
   useEffect(() => {
     const loadData = async () => {
