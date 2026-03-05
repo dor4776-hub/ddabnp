@@ -13,57 +13,80 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [currentDraft, setCurrentDraft] = useState<EventRecord | null>(null);
 
-  // --- טעינה מהענן של גוגל (שליפה ישירה מהגיבוי המלא) ---
+  // --- מנגנון הטעינה החדש: עובד כמו "ייבוא טופס" ושומר על הזיכרון המקומי ---
   useEffect(() => {
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7I4Iv-XieA9GdwD5DDqMjMmMqM9SkJ33Yn3lAlKrC4rmQKosls1WFiXQSzhT2dFv1/exec';
   
     const loadData = async () => {
       try {
+        // 1. שולפים מיד את הנתונים המושלמים מהזיכרון של הטלפון!
         const saved = localStorage.getItem('eventTrack_events');
+        let localEvents: EventRecord[] = [];
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
-            setEvents(parsed);
+            localEvents = parsed;
+            setEvents(localEvents); // מציגים מיד בלי לחכות לגוגל
           }
         }
   
         if (!GOOGLE_SCRIPT_URL.startsWith('http')) return;
   
+        // 2. מושכים מגוגל רק בשביל אירועים חדשים (למשל שניר פתח)
         const response = await fetch(GOOGLE_SCRIPT_URL);
         if (!response.ok) throw new Error('Network error');
         
-        const data = await response.json();
+        const cloudData = await response.json();
         
-        if (data && Array.isArray(data) && data.length > 0) {
-          const formattedEvents = data.map((item: any) => {
-            // התיקון: אנחנו מושכים את הצילום-מצב המלא של האירוע!
-            if (item.eventData) {
+        if (cloudData && Array.isArray(cloudData) && cloudData.length > 0) {
+          const localEventsMap = new Map(localEvents.map(e => [e.id, e]));
+
+          const mergedEvents = cloudData.map((cloudItem: any) => {
+            // ניסיון לחלץ את האובייקט המושלם (ייבוא מוחלט)
+            let importedEvent = null;
+            if (cloudItem.eventData) {
               try {
-                const fullEvent = typeof item.eventData === 'string' ? JSON.parse(item.eventData) : item.eventData;
-                return {
-                  ...fullEvent,
-                  status: fullEvent.status || item.status || 'active',
-                  createdAt: fullEvent.createdAt || item.createdAt || Date.now()
-                };
-              } catch (err) {
-                console.warn("Error parsing eventData", err);
-              }
+                importedEvent = typeof cloudItem.eventData === 'string' ? JSON.parse(cloudItem.eventData) : cloudItem.eventData;
+              } catch (e) {}
             }
 
-            // גיבוי למקרה שמשהו השתבש
-            const rawItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []);
+            // זיהוי האירוע (לפי ID או שם)
+            const trueId = importedEvent ? importedEvent.id : cloudItem.id;
+            const localMatch = localEventsMap.get(trueId) || localEvents.find(e => e.eventName === cloudItem.eventName);
+
+            // --- חומת ההגנה ---
+            if (localMatch && localMatch.items && localMatch.items.length > 0) {
+              // אם יש לנו את זה בטלפון מושלם - אנחנו לא נותנים לגוגל לדרוס את זה!
+              return { ...localMatch, status: cloudItem.status || localMatch.status };
+            }
+
+            // אם זה אירוע חדש שהגיע מבחוץ (מכשיר אחר), משתמשים בייבוא המושלם
+            if (importedEvent && importedEvent.items && importedEvent.items.length > 0) {
+              return { ...importedEvent, status: cloudItem.status || importedEvent.status };
+            }
+
+            // מקרה קיצון: בונים מחדש אם הכל נכשל
+            const eventType = cloudItem.type || 'private';
+            const template = EVENT_TEMPLATES[eventType as EventType] || EVENT_TEMPLATES['private'];
             return {
-              ...item,
-              items: rawItems,
-              createdAt: item.createdAt || Date.now()
+              ...cloudItem,
+              id: trueId || Math.random().toString(36).substr(2, 9),
+              type: eventType,
+              items: template.defaultItems.map(i => ({...i})),
+              status: cloudItem.status || 'active',
+              createdAt: cloudItem.createdAt || Date.now()
             };
           });
+
+          // מסננים כפילויות, שומרים רק את הייחודיים לפי תאריך יצירה
+          const uniqueEvents = Array.from(new Map(mergedEvents.map(e => [e.id, e])).values());
+          uniqueEvents.sort((a, b) => b.createdAt - a.createdAt);
           
-          setEvents(formattedEvents);
-          localStorage.setItem('eventTrack_events', JSON.stringify(formattedEvents));
+          setEvents(uniqueEvents);
+          localStorage.setItem('eventTrack_events', JSON.stringify(uniqueEvents));
         }
       } catch (e) {
-        console.warn("סנכרון נכשל, משתמשים בגיבוי", e);
+        console.warn("סנכרון מגוגל נכשל, נשארים עם המידע המושלם מהטלפון", e);
       }
     };
   
@@ -168,7 +191,7 @@ const App: React.FC = () => {
 
     html += `</tbody><tfoot><tr><td colspan="7" class="footer-label" style="text-align: left;">סה"כ לתשלום:</td><td class="total-row">₪${grandTotal.toLocaleString()}</td></tr></tfoot></table></body></html>`;
 
-    // 1. הורדת הקובץ למכשיר
+    // הורדה למחשב/טלפון
     const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const fileName = `${event.eventName.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('he-IL').replace(/\./g, '-')}.xls`;
@@ -178,7 +201,7 @@ const App: React.FC = () => {
     link.click();
     URL.revokeObjectURL(url);
 
-    // 2. שליחה לדרייב (עם פקודת await למניעת התנגשויות)
+    // סנכרון לדרייב
     const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycby7I4Iv-XieA9GdwD5DDqMjMmMqM9SkJ33Yn3lAlKrC4rmQKosls1WFiXQSzhT2dFv1/exec';
     const params = new URLSearchParams();
     params.append('fileData', html); 
@@ -186,7 +209,6 @@ const App: React.FC = () => {
     params.append('eventName', event.eventName);
 
     try {
-      // הוספתי await כדי שגוגל יסיים את הפעולה הזו לפני שהוא עובר לבאה!
       await fetch(GOOGLE_URL, {
         method: 'POST',
         mode: 'no-cors',
@@ -195,10 +217,7 @@ const App: React.FC = () => {
         },
         body: params.toString()
       });
-      console.log("Drive Sync Completed");
-    } catch (err) {
-      console.error("Drive sync failed", err);
-    }
+    } catch (err) {}
   };
 
   const handleCreateNew = (type: EventType) => {
@@ -256,7 +275,6 @@ const App: React.FC = () => {
       return [eventToSave, ...prev];
     });
 
-    // הוספתי await! עכשיו הוא יחכה שהדוח יישלח במלואו לפני שהוא שומר את הנתונים
     await downloadConsumptionReport(eventToSave);
 
     const GOOGLE_URL = 'https://script.google.com/macros/s/AKfycby7I4Iv-XieA9GdwD5DDqMjMmMqM9SkJ33Yn3lAlKrC4rmQKosls1WFiXQSzhT2dFv1/exec';
@@ -275,12 +293,9 @@ const App: React.FC = () => {
         },
         body: params.toString()
       });
-      console.log("BNP Cloud: Sync Successful");
-    } catch (err) {
-      console.error("BNP Cloud: Sync Failed", err);
-    }
+    } catch (err) {}
 
-    alert('האירוע נשמר וסונכרן לענן של BNP!');
+    alert('האירוע נשמר בהצלחה!');
     setCurrentDraft(null);
     setView('dashboard');
   };
