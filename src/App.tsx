@@ -111,4 +111,9 @@ const App: React.FC = () => {
   return (
     <Layout onNavigateHome={() => setView('dashboard')}>
       {view === 'dashboard' && <Dashboard events={events} onCreateNew={handleCreateNew} onEditEvent={(id) => { const e = events.find(ev => ev.id === id); if(e) { setCurrentDraft(e); setView('editor'); } }} onDeleteEvent={(id) => setEvents(prev => prev.filter(e => e.id !== id))} onImportEvent={handleImportEvent} />}
-      {view === 'editor' && currentDraft && <EventForm event={currentDraft} onSave={handleSaveEvent} onBack={() => { setCurrentDraft(null
+      {view === 'editor' && currentDraft && <EventForm event={currentDraft} onSave={handleSaveEvent} onBack={() => { setCurrentDraft(null); setView('dashboard'); }} />}
+    </Layout>
+  );
+};
+
+export default App;
