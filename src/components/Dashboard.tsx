@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useRef } from 'react';
 import { EVENT_TEMPLATES } from '../constants';
-import { EventRecord, EventType, EquipmentItem } from '../types';
+import type { EventRecord, EventType, EquipmentItem } from '../types';
 import { Plus, Calendar, User, ChevronLeft, Search, Trash2, Upload } from 'lucide-react';
 
 interface DashboardProps {
