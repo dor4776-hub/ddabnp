@@ -13,8 +13,7 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [currentDraft, setCurrentDraft] = useState<EventRecord | null>(null);
 
- // טעינה מהענן של גוגל עם גיבוי מקומי ומערכת שחזור רשימות חכמה
-  // טעינה מהענן של גוגל עם גיבוי מקומי ומערכת שחזור רשימות חכמה
+// טעינה מהענן של גוגל עם גיבוי מקומי ומערכת שחזור רשימות חכמה
   useEffect(() => {
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7I4Iv-XieA9GdwD5DDqMjMmMqM9SkJ33Yn3lAlKrC4rmQKosls1WFiXQSzhT2dFv1/exec';
   
@@ -39,34 +38,26 @@ const App: React.FC = () => {
         
         if (data && Array.isArray(data) && data.length > 0) {
           const formattedEvents = data.map((item: any) => {
-            // חילוץ הציוד שנשמר (אם יש שגיאה, מחזירים מערך ריק)
             const rawItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []);
 
-            // --- מערכת ההגנה: שחזור הציוד המלא מול מה שנשמר ---
             let finalItems = rawItems;
 
-            // מוודאים שיש לנו את התבנית של סוג האירוע
             if (item.type && EVENT_TEMPLATES[item.type as EventType]) {
               const template = EVENT_TEMPLATES[item.type as EventType];
-
-              // יוצרים "מילון" של כל מה שכבר מולא ונשמר בגוגל
               const savedItemsMap = new Map(rawItems.map((r: any) => [r.name, r]));
 
-              // עוברים על כל הרשימה המקורית של הבר, פריט פריט
               finalItems = template.defaultItems.map((templateItem: any) => {
-                // אם הפריט הזה מולא בעבר - לוקחים את הנתונים שלו
-                if (savedItemsMap.has(templateItem.name)) {
-                  const savedData = savedItemsMap.get(templateItem.name);
-                  savedItemsMap.delete(templateItem.name); // מסמנים שלקחנו
-                  return { ...templateItem, ...savedData };
+                const baseItem = templateItem || {}; // <-- הגנה 1: מוודא שהתבנית היא אובייקט
+                if (savedItemsMap.has(baseItem.name)) {
+                  const savedData = savedItemsMap.get(baseItem.name) || {}; // <-- הגנה 2: מוודא שהנתון השמור הוא אובייקט
+                  savedItemsMap.delete(baseItem.name);
+                  return { ...baseItem, ...savedData };
                 }
-                // אם הוא לא מולא - מחזירים אותו ריק ומוכן למילוי כדי שהטופס יישאר שלם
-                return { ...templateItem };
+                return { ...baseItem };
               });
 
-              // חשוב מאוד: אם הוספתם ציוד מיוחד לאירוע שלא קיים בתבנית הרגילה, מוסיפים אותו
-              savedItemsMap.forEach((customItem) => {
-                finalItems.push(customItem);
+              savedItemsMap.forEach((customItem: any) => {
+                if (customItem) finalItems.push(customItem);
               });
             }
 
