@@ -1,4 +1,7 @@
+@import "tailwindcss";
+
 :root {
+  direction: rtl; /* הוספנו כיווניות קשיחה לעברית */
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
@@ -54,16 +57,18 @@
   width: 1126px;
   max-width: 100%;
   margin: 0 auto;
-  text-align: center;
+  text-align: right; /* שינינו ממרכז לימין */
   border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  direction: rtl; /* גיבוי נוסף לעברית */
 }
 
 body {
   margin: 0;
+  direction: rtl; /* גיבוי נוסף לעברית */
 }
 
 h1,
