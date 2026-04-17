@@ -34,9 +34,11 @@ export interface EventRecord {
   managerName: string;
   eventDate: string;
   items: EquipmentItem[];
-  status: 'active' | 'completed';
+  status: 'active' | 'ready' | 'completed';
   notes?: string;
   createdAt: number;
+  // taskId → true when checked
+  tasksDone?: Record<string, boolean>;
 }
 
 export interface EventCategoryTemplate {

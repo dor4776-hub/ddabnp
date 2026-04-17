@@ -2,17 +2,19 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { EVENT_TEMPLATES } from '../constants';
 import type { EventRecord, EventType, EquipmentItem } from '../types';
-import { Plus, Calendar, User, ChevronLeft, Search, Trash2, Upload } from 'lucide-react';
+import { Plus, Calendar, User, ChevronLeft, Search, Trash2, Upload, FileSpreadsheet, CheckCircle } from 'lucide-react';
+import { driveConfigured } from '../services/driveService';
 
 interface DashboardProps {
   events: EventRecord[];
-  onCreateNew: (type: EventType) => void;
-  onEditEvent: (id: string) => void;
+  onCreateNew:   (type: EventType) => void;
+  onEditEvent:   (id: string) => void;
   onDeleteEvent: (id: string) => void;
   onImportEvent: (importedEvent: Partial<EventRecord>) => void;
+  onExportEvent: (id: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ events, onCreateNew, onEditEvent, onDeleteEvent, onImportEvent }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ events, onCreateNew, onEditEvent, onDeleteEvent, onImportEvent, onExportEvent }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,6 +95,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ events, onCreateNew, onEdi
 
   return (
     <div className="space-y-8">
+      {/* Drive Status Banner */}
+      <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm ${
+        driveConfigured ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'
+      }`}>
+        <CheckCircle size={15} />
+        {driveConfigured
+          ? 'Google Drive מחובר — סגירת אירוע תיצור תיקייה אוטומטית עם 4 קבצים'
+          : 'Google Drive לא מוגדר — הוסף VITE_GOOGLE_CLIENT_ID ו-VITE_GOOGLE_DRIVE_FOLDER_ID ב-.env'}
+      </div>
+
       {/* Hero Section - New Event */}
       <section>
         <div className="flex justify-between items-center mb-6">
@@ -170,12 +182,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ events, onCreateNew, onEdi
                   onClick={() => onEditEvent(event.id)}
                 >
                   <div className="flex items-center gap-3 mb-1">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      event.status === 'completed' 
-                        ? 'bg-emerald-100 text-emerald-700' 
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                      event.status === 'completed'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : event.status === 'ready'
+                        ? 'bg-indigo-100 text-indigo-700'
                         : 'bg-amber-100 text-amber-700'
                     }`}>
-                      {event.status === 'completed' ? 'הושלם' : 'פעיל'}
+                      {event.status === 'completed' ? '✅ הושלם'
+                        : event.status === 'ready'  ? '🚀 יצא לאירוע'
+                        : '✏️ טיוטה'}
                     </span>
                     <span className="text-xs text-slate-400 flex items-center gap-1">
                       <Calendar size={12} />
@@ -197,10 +213,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ events, onCreateNew, onEdi
                 </div>
 
                 <div className="flex items-center gap-3 self-end sm:self-center">
-                   <button
-                    onClick={(e) => {
+                  {event.status === 'completed' && (
+                    <button
+                      onClick={e => { e.stopPropagation(); onExportEvent(event.id); }}
+                      className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                      title="ייצוא דוח Excel"
+                    >
+                      <FileSpreadsheet size={20} />
+                    </button>
+                  )}
+                  <button
+                    onClick={e => {
                       e.stopPropagation();
-                      if(window.confirm('האם אתה בטוח שברצונך למחוק את האירוע?')) {
+                      if (window.confirm('האם אתה בטוח שברצונך למחוק את האירוע?')) {
                         onDeleteEvent(event.id);
                       }
                     }}
@@ -209,7 +234,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ events, onCreateNew, onEdi
                   >
                     <Trash2 size={20} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => onEditEvent(event.id)}
                     className="flex items-center gap-1 px-4 py-2 bg-indigo-50 text-indigo-700 font-medium rounded-lg hover:bg-indigo-100 transition-colors text-sm"
                   >

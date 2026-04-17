@@ -54,16 +54,9 @@
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: right; /* שינינו ממרכז לימין */
-  border-inline: 1px solid var(--border);
+  width: 100%;
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  direction: rtl; /* גיבוי נוסף לעברית */
+  direction: rtl;
 }
 
 body {

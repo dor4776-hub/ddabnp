@@ -1,28 +1,36 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+const genAI  = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
 export const getEquipmentSuggestions = async (
   eventType: string,
   eventName: string,
   existingItems: string[]
 ): Promise<{ name: string; category: string; reason: string }[]> => {
+  if (!genAI) {
+    console.warn('Gemini API key missing — set VITE_GEMINI_API_KEY in .env');
+    return [];
+  }
+
   try {
-    // שימוש במודל Gemini 3 Flash כפי שמוגדר בחשבון שלך
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash",
+      model: 'gemini-1.5-flash',
       generationConfig: {
-        responseMimeType: "application/json",
+        responseMimeType: 'application/json',
         responseSchema: {
           type: SchemaType.ARRAY,
           items: {
             type: SchemaType.OBJECT,
             properties: {
-              name: { type: SchemaType.STRING, description: "שם הפריט בעברית" },
-              category: { type: SchemaType.STRING, description: "קטגוריה בעברית" },
-              reason: { type: SchemaType.STRING, description: "הסבר קצר בעברית" }
+              name:     { type: SchemaType.STRING, description: 'שם הפריט בעברית' },
+              category: { type: SchemaType.STRING, description: 'קטגוריה בעברית' },
+              reason:   { type: SchemaType.STRING, description: 'הסבר קצר בעברית' },
             },
-            required: ["name", "category", "reason"]
-          }
-        }
-      }
+            required: ['name', 'category', 'reason'],
+          },
+        },
+      },
     });
 
     const prompt = `
@@ -31,17 +39,14 @@ export const getEquipmentSuggestions = async (
       שם האירוע: ${eventName}
       פריטים שכבר קיימים ברשימה: ${existingItems.join(', ')}
 
-      בהתבסס על הניסיון של בר קוקטיילים מקצועי, הצע 3 פריטים חשובים שחסרים ברשימה הציוד הזו.
+      בהתבסס על הניסיון של בר קוקטיילים מקצועי, הצע 3 פריטים חשובים שחסרים ברשימת הציוד.
       החזר את התשובה בעברית בפורמט JSON.
     `;
 
     const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-    
-    return JSON.parse(responseText || "[]");
-
+    return JSON.parse(result.response.text() || '[]');
   } catch (error) {
-    console.error("Error fetching suggestions:", error);
+    console.error('Gemini suggestions error:', error);
     return [];
   }
 };

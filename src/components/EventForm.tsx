@@ -1,25 +1,46 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import type { EventRecord, EquipmentItem } from '../types';
-import { Save, ArrowRight, Plus, Sparkles, AlertTriangle, CheckCheck, Boxes, User, Calendar, CheckSquare, Square, Droplets, XCircle, Coins, Package } from 'lucide-react';
+import { Save, ArrowRight, Plus, Sparkles, AlertTriangle, CheckCheck, Boxes, User, Calendar, CheckSquare, Square, Droplets, XCircle, Coins, Package, ClipboardList, Wrench } from 'lucide-react';
 import { EVENT_TEMPLATES, CATEGORIES } from "../constants";
 import { getEquipmentSuggestions } from "../services/geminiService";
+import { TaskChecklist } from './TaskChecklist';
+import { FIRST_VISIT_PHASES, SECOND_VISIT_PHASES } from '../constants/taskTemplates';
 interface EventFormProps {
   event: EventRecord;
-  onSave: (updatedEvent: EventRecord) => void;
-  onBack: () => void;
+  isSaving?:    boolean;
+  onSaveDraft:  (updatedEvent: EventRecord) => void;
+  onMarkReady:  (updatedEvent: EventRecord) => void;
+  onClose:      (updatedEvent: EventRecord) => void;
+  onBack:       () => void;
 }
 
 const MANAGERS = ['ניר פטלוק', 'דור ארביב', 'גיא פטלוק', 'רועי אבקסיס'];
 const EMPLOYEE_LIST = ['גיא פטלוק', 'שני מארק', 'רון אלמקייס', 'ניר פטלוק', 'דור ארביב', 'רועי אבקסיס'];
 
-export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onBack }) => {
-  const [formData, setFormData] = useState<EventRecord>(event);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [newItemName, setNewItemName] = useState('');
+export const EventForm: React.FC<EventFormProps> = ({ event, isSaving = false, onSaveDraft, onMarkReady, onClose, onBack }) => {
+  const [formData,       setFormData]       = useState<EventRecord>(event);
+  const [activeTab,      setActiveTab]       = useState<'equipment' | 'tasks'>('tasks');
+  const [isAiLoading,    setIsAiLoading]     = useState(false);
+  const [newItemName,    setNewItemName]      = useState('');
   const [newItemCategory, setNewItemCategory] = useState(CATEGORIES.GENERAL);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const dateInputRef = useRef<HTMLInputElement>(null);
+
+  // Which task phases to show depends on event status
+  const taskPhases = formData.status === 'active'
+    ? FIRST_VISIT_PHASES
+    : SECOND_VISIT_PHASES;
+
+  const handleTasksChange = (tasksDone: Record<string, boolean>) => {
+    setFormData(prev => ({ ...prev, tasksDone }));
+  };
+
+  // All tasks for the current visit must be done before saving
+  const allCurrentTasksDone = useMemo(() => {
+    const allIds = taskPhases.flatMap(p => p.stages.flatMap(s => s.tasks.map(t => t.id)));
+    return allIds.length > 0 && allIds.every(id => !!(formData.tasksDone ?? {})[id]);
+  }, [taskPhases, formData.tasksDone]);
 
   // Group items by category for display
   const groupedItems = useMemo(() => {
@@ -154,7 +175,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onBack }) =
   };
 
   const handleAiSuggest = async () => {
-    if (!process.env.API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
       alert("AI feature is not available (API Key missing).");
       return;
     }
@@ -558,8 +579,46 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onBack }) =
         </div>
       </div>
 
+      {/* Tab Switcher */}
+      <div className="flex gap-2 bg-white rounded-2xl p-1.5 border border-slate-200 shadow-sm">
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            activeTab === 'tasks'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+        >
+          <ClipboardList size={17} />
+          משימות
+        </button>
+        <button
+          onClick={() => setActiveTab('equipment')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            activeTab === 'equipment'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+        >
+          <Wrench size={17} />
+          ציוד
+        </button>
+      </div>
+
+      {/* Tasks Tab */}
+      {activeTab === 'tasks' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+          <TaskChecklist
+            phases={taskPhases}
+            tasksDone={formData.tasksDone ?? {}}
+            onChange={handleTasksChange}
+            allDone={allCurrentTasksDone}
+          />
+        </div>
+      )}
+
       {/* Equipment Lists by Category */}
-      {Object.entries(groupedItems).map(([category, items]) => {
+      {activeTab === 'equipment' && Object.entries(groupedItems).map(([category, items]) => {
         const categoryItems = items as EquipmentItem[];
         const isEmployeeCategory = category === CATEGORIES.EMPLOYEES;
         const isAdditionalCategory = category === CATEGORIES.ADDITIONAL_COSTS;
@@ -660,7 +719,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onBack }) =
       })}
 
       {/* Add new Item Manual */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+      {activeTab === 'equipment' && <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-3 items-end sm:items-center">
         <div className="flex-grow w-full">
            <label className="text-xs text-slate-500 mb-1 block">שם הפריט להוספה</label>
            <input 
@@ -682,39 +741,93 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onBack }) =
               <option value="אחר">אחר</option>
             </select>
         </div>
-        <button 
+        <button
           onClick={handleAddItem}
           className="w-full sm:w-auto px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
         >
           <Plus size={18} />
           הוסף
         </button>
-      </div>
+      </div>}
 
-      {/* Sticky Bottom Summary and Save */}
+      {/* Sticky Bottom Summary, Save and Close */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-40 p-4">
-         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-4 justify-between">
-           {/* Grand Total Display */}
-           <div className="flex items-center gap-3 w-full sm:w-auto p-2 bg-slate-50 rounded-lg border border-slate-100">
-              <div className="bg-indigo-100 p-2 rounded-full text-indigo-600">
-                <Coins size={24} />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">סה״כ לתשלום</span>
-                <span className="text-2xl font-black text-indigo-700 leading-none">
-                  ₪{totalEventCost.toLocaleString()}
-                </span>
-              </div>
-           </div>
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-4 justify-between">
+          {/* Grand Total */}
+          <div className="flex items-center gap-3 w-full sm:w-auto p-2 bg-slate-50 rounded-lg border border-slate-100">
+            <div className="bg-indigo-100 p-2 rounded-full text-indigo-600">
+              <Coins size={24} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">סה״כ לתשלום</span>
+              <span className="text-2xl font-black text-indigo-700 leading-none">
+                ₪{totalEventCost.toLocaleString()}
+              </span>
+            </div>
+          </div>
 
-         <button 
-  onClick={() => onSave(formData)} // פשוט וקל, בלי לוגיקה מסובכת בכפתור
-  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
->
-  <Save size={20} />
-  שמור נתונים והורד דוח
-</button>
-         </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+
+            {/* ── Active (draft) mode: 2 buttons ── */}
+            {formData.status === 'active' && (
+              <>
+                {/* שמור טיוטה */}
+                <div className="relative flex-1 sm:flex-none group">
+                  <button
+                    onClick={() => onSaveDraft(formData)}
+                    disabled={isSaving || !allCurrentTasksDone}
+                    className="w-full bg-slate-600 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Save size={18} />
+                    שמור טיוטה
+                  </button>
+                  {!allCurrentTasksDone && (
+                    <span className="absolute -top-8 right-0 hidden group-hover:block bg-slate-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                      יש להשלים את כל המשימות תחילה
+                    </span>
+                  )}
+                </div>
+
+                {/* רשמ"צ מוכן */}
+                <div className="relative flex-1 sm:flex-none group">
+                  <button
+                    onClick={() => onMarkReady(formData)}
+                    disabled={isSaving || !allCurrentTasksDone}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 ring-2 ring-indigo-300"
+                  >
+                    <CheckCheck size={20} />
+                    {isSaving ? 'שומר...' : 'רשמ"צ מוכן — יציאה לאירוע'}
+                  </button>
+                  {!allCurrentTasksDone && (
+                    <span className="absolute -top-8 right-0 hidden group-hover:block bg-slate-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                      יש להשלים את כל המשימות תחילה
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ── Ready / Completed mode: Close only ── */}
+            {(formData.status === 'ready' || formData.status === 'completed') && (
+              <div className="relative flex-1 sm:flex-none group">
+                <button
+                  onClick={() => onClose(formData)}
+                  disabled={isSaving || !allCurrentTasksDone}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 ring-2 ring-emerald-300 text-lg"
+                >
+                  <CheckCheck size={22} />
+                  {isSaving ? 'מעבד...' : 'סיום אירוע ושמירה 🏁'}
+                </button>
+                {!allCurrentTasksDone && (
+                  <span className="absolute -top-8 right-0 hidden group-hover:block bg-slate-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                    יש להשלים את כל המשימות תחילה
+                  </span>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
       </div>
     </div>
   );
