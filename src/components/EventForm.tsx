@@ -246,7 +246,8 @@ export const EventForm: React.FC<EventFormProps> = ({ event, isSaving = false, o
       CATEGORIES.TEQUILA,
       CATEGORIES.RUM,
       CATEGORIES.ANISE,
-      CATEGORIES.APERITIF
+      CATEGORIES.APERITIF,
+      CATEGORIES.LIQUEUR,
     ];
     return consumableCategories.includes(category);
   };
@@ -365,57 +366,42 @@ export const EventForm: React.FC<EventFormProps> = ({ event, isSaving = false, o
         {/* Quantity Controls */}
         <div className="flex items-center gap-4 sm:gap-6">
           
-          {/* Glass Baskets UI (Cool Feature) */}
+          {/* Glass Baskets UI */}
           {isGlass && (
-            <div className="flex flex-col items-center gap-1">
-               <label className="text-[10px] text-indigo-500 font-black uppercase tracking-tighter">סקטים ({item.basketSize})</label>
-               <div className="flex items-center gap-1 bg-indigo-50 p-1 rounded-xl border-2 border-indigo-100 shadow-inner">
-                  <div className="flex flex-col gap-1">
-                    <button 
-                      onClick={() => handleUpdateBaskets(item.id, 'basketsOut', 1)}
-                      className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:scale-90 transition-all shadow-sm"
-                      title="הוסף סקט ליציאה"
-                    >
-                      <Package size={14} />
-                    </button>
-                    <button 
-                      onClick={() => handleUpdateBaskets(item.id, 'basketsOut', -1)}
-                      className="p-1.5 bg-white text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 active:scale-90 transition-all shadow-sm"
-                      title="הפחת סקט מיציאה"
-                    >
-                      <Package size={14} className="opacity-50" />
-                    </button>
+            <div className="flex flex-col items-center gap-1 w-full sm:w-auto">
+              <label className="text-[10px] text-indigo-500 font-black uppercase tracking-tighter">סקטים ({item.basketSize})</label>
+              <div className="flex gap-2 w-full sm:w-auto">
+                {/* Out baskets */}
+                <div className="flex-1 sm:flex-none flex items-center justify-between gap-2 bg-indigo-50 px-3 py-2 rounded-xl border-2 border-indigo-100 min-w-[90px]">
+                  <button
+                    onClick={() => handleUpdateBaskets(item.id, 'basketsOut', -1)}
+                    className="w-7 h-7 flex items-center justify-center bg-white text-indigo-600 border border-indigo-200 rounded-lg font-bold text-lg leading-none active:scale-90 transition-all"
+                  >−</button>
+                  <div className="flex flex-col items-center">
+                    <span className="text-xl font-black text-indigo-800 leading-none">{item.basketsOut || 0}</span>
+                    <span className="text-[9px] text-indigo-400 font-bold">יצא</span>
                   </div>
-                  
-                  <div className="w-10 flex flex-col items-center">
-                    <span className="text-xl font-black text-indigo-800 leading-none">{(item.basketsOut || 0)}</span>
-                    <span className="text-[8px] text-indigo-400 font-bold">יצא</span>
+                  <button
+                    onClick={() => handleUpdateBaskets(item.id, 'basketsOut', 1)}
+                    className="w-7 h-7 flex items-center justify-center bg-indigo-600 text-white rounded-lg font-bold text-lg leading-none active:scale-90 transition-all shadow-sm"
+                  >+</button>
+                </div>
+                {/* In baskets */}
+                <div className="flex-1 sm:flex-none flex items-center justify-between gap-2 bg-emerald-50 px-3 py-2 rounded-xl border-2 border-emerald-100 min-w-[90px]">
+                  <button
+                    onClick={() => handleUpdateBaskets(item.id, 'basketsIn', -1)}
+                    className="w-7 h-7 flex items-center justify-center bg-white text-emerald-600 border border-emerald-200 rounded-lg font-bold text-lg leading-none active:scale-90 transition-all"
+                  >−</button>
+                  <div className="flex flex-col items-center">
+                    <span className="text-xl font-black text-emerald-700 leading-none">{item.basketsIn || 0}</span>
+                    <span className="text-[9px] text-emerald-400 font-bold">חזר</span>
                   </div>
-
-                  <div className="h-8 w-px bg-indigo-200 mx-1"></div>
-
-                  <div className="w-10 flex flex-col items-center">
-                    <span className="text-xl font-black text-emerald-600 leading-none">{(item.basketsIn || 0)}</span>
-                    <span className="text-[8px] text-emerald-400 font-bold">חזר</span>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <button 
-                      onClick={() => handleUpdateBaskets(item.id, 'basketsIn', 1)}
-                      className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-90 transition-all shadow-sm"
-                      title="הוסף סקט לחזרה"
-                    >
-                      <Package size={14} />
-                    </button>
-                    <button 
-                      onClick={() => handleUpdateBaskets(item.id, 'basketsIn', -1)}
-                      className="p-1.5 bg-white text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 active:scale-90 transition-all shadow-sm"
-                      title="הפחת סקט מחזרה"
-                    >
-                      <Package size={14} className="opacity-50" />
-                    </button>
-                  </div>
-               </div>
+                  <button
+                    onClick={() => handleUpdateBaskets(item.id, 'basketsIn', 1)}
+                    className="w-7 h-7 flex items-center justify-center bg-emerald-600 text-white rounded-lg font-bold text-lg leading-none active:scale-90 transition-all shadow-sm"
+                  >+</button>
+                </div>
+              </div>
             </div>
           )}
 

@@ -30,6 +30,7 @@ export const CATEGORIES = {
   RUM: 'רום',
   ANISE: 'אניס',
   APERITIF: 'אפרטיף',
+  LIQUEUR: 'ליקר',
   BEER: 'בירות',
   WINE: 'יין',
   ADDITIONAL_COSTS: 'עלויות נוספות',
@@ -54,6 +55,10 @@ const aperitifItems = [
   createItem('אפרול', CATEGORIES.APERITIF, { unit: 'ליטר', price: 73 }),
   createItem('קמפרי', CATEGORIES.APERITIF, { unit: 'ליטר', price: 77 }),
   createItem('מרטיני רוסו', CATEGORIES.APERITIF, { unit: 'ליטר', price: 55 }),
+];
+
+const liqueurItems = [
+  createItem('ליקר וודרן', CATEGORIES.LIQUEUR, { unit: 'ליטר', price: 75 }),
 ];
 
 const beerItems = [
@@ -125,6 +130,7 @@ const allAlcoholItems = [
   ...rumItems,
   ...aniseItems,
   ...aperitifItems,
+  ...liqueurItems,
   ...beerItems,
   ...wineItems,
 ];
@@ -175,6 +181,7 @@ const getBaseAdditionalCostsItems = () => [
   createItem('בצק סוכר ממותג', CATEGORIES.ADDITIONAL_COSTS, { quantityOut: 1, isFlatFee: true }),
   createItem('גרנישים טריים', CATEGORIES.ADDITIONAL_COSTS, { quantityOut: 1, isFlatFee: true }),
   createItem('דלק', CATEGORIES.ADDITIONAL_COSTS, { quantityOut: 1, isFlatFee: true }),
+  createItem('קרח', CATEGORIES.ADDITIONAL_COSTS, { unit: 'שקיות', price: 12, quantityOut: 0 }),
 ];
 
 const getBaseEmployeesItems = () => [
